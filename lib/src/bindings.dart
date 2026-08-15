@@ -7,7 +7,7 @@ DynamicLibrary get _dl {
   if (Platform.isIOS) {
     // Try open SPM generated library.
     try {
-      return DynamicLibrary.open('orm-flutter-ios.framework/orm-flutter-ios');
+      return DynamicLibrary.open('orm-flutter.framework/orm-flutter');
 
       // Fallback open podspec defined library.
     } catch (_) {

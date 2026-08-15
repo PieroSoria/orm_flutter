@@ -9,7 +9,7 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "orm-flutter-ios",
+            name: "orm-flutter",
             type: .dynamic,
             targets: ["query_engine_bridge"]
         )
