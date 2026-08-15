@@ -1,0 +1,62 @@
+name: orm_flutter
+description: "The engine of Prisma ORM for Flutter, Library for binding Prisma's C-Abi engine with Flutter."
+homepage: https://prisma.pub
+repository: https://github.com/PieroSoria/orm_flutter
+publish_to: none
+
+version: 0.5.1
+
+funding:
+  - https://github.com/sponsors/medz
+  - https://opencollective.com/openodroe
+
+environment:
+  sdk: ^3.6.0
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.1.3
+  dart_orm:
+    git:
+      url: https://github.com/PieroSoria/dart_orm.git
+      ref: main
+  path_provider: ^2.1.5
+  path: ^1.9.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  ffigen: ^19.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
+
+ffigen:
+  name: QueryEngineBindings
+  description: |
+    Bindings for `query_engine_bridge.h`.
+
+    Regenerate bindings with `dart run ffigen`.
+  output: lib/src/_generate_bindings.dart
+  language: c
+  headers:
+    entry-points:
+      - src/query_engine_bridge/headers/bridge.h
+    include-directives:
+      - src/query_engine_bridge/**
+  comments:
+    style: any
+    length: full
+  silence-enum-warning: true
+  functions:
+    exclude:
+      - prisma_.*
+  globals:
+    exclude:
+      - PRISMA_.*
