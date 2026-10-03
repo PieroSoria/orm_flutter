@@ -17,7 +17,13 @@ DynamicLibrary get _dl {
     return DynamicLibrary.open("liborm_flutter_android.so");
   }
 
-  throw UnsupportedError('Susupported platform: ${Platform.operatingSystem}');
+  if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+    // For desktop platforms, FFI bindings are not used when using BinaryEngine.
+    // Return a dummy library to avoid throwing if bindings are accidentally accessed.
+    return DynamicLibrary.process();
+  }
+
+  throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
 }
 
 final bindings = QueryEngineBindings(_dl);

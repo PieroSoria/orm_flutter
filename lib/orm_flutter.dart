@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:dart_orm/dart_orm.dart';
+import 'package:dart_orm/engines/binary.dart' as binary;
 
 import 'src/library_engine.dart' as impl;
 
@@ -10,6 +11,7 @@ import 'src/library_engine.dart' as impl;
 /// Supported platforms:
 /// - **iOS** supported by the FFI engine
 /// - **Android** supported by the FFI engine
+/// - **macOS/Windows/Linux** supported by the Binary engine (process-based)
 class LibraryEngine implements Engine {
   /// Create a new library engine instance
   ///
@@ -25,8 +27,15 @@ class LibraryEngine implements Engine {
       return LibraryEngine._(impl.FfiLibraryEngine(
           datasources: datasources, options: options, schema: schema));
     }
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      return LibraryEngine._(binary.BinaryEngine(
+        datasources: datasources,
+        options: options,
+        schema: schema,
+      ));
+    }
 
-    throw UnsupportedError('Unsupport platform: ${Platform.operatingSystem}');
+    throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
   }
 
   const LibraryEngine._(this._pe);
@@ -89,9 +98,10 @@ class LibraryEngine implements Engine {
     required String path,
     AssetBundle? bundle,
   }) async {
-    if (Platform.isIOS || Platform.isAndroid) {
+    if (Platform.isIOS || Platform.isAndroid && _pe is impl.FfiLibraryEngine) {
       return (_pe as impl.FfiLibraryEngine)
           .applyMigrations(path: path, bundle: bundle);
     }
+    // Binary engine does not support applyMigrations via FFI
   }
 }
