@@ -1,3 +1,11 @@
+## Unreleased
+
+- Add desktop query engines for macOS, Windows and Linux with executable overrides,
+  application bundle lookup and extraction from Flutter assets.
+- Add desktop migration support through Prisma schema-engine JSON-RPC.
+- Preserve absolute SQLite paths and allow creation of new databases.
+- Add a desktop engine setup command, integration tests and an OS CI matrix.
+
 ## v0.5.1
 
 chore: update `orm_flutter_ffi` to `v0.0.3` version

@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:dart_orm/dart_orm.dart';
-import 'package:dart_orm/engines/binary.dart' as binary;
+import 'src/desktop_engine.dart' as binary;
+import 'src/desktop_migrations.dart';
 
 import 'src/library_engine.dart' as impl;
 
@@ -98,10 +99,15 @@ class LibraryEngine implements Engine {
     required String path,
     AssetBundle? bundle,
   }) async {
-    if (Platform.isIOS || Platform.isAndroid && _pe is impl.FfiLibraryEngine) {
-      return (_pe as impl.FfiLibraryEngine)
-          .applyMigrations(path: path, bundle: bundle);
+    if (_pe is impl.FfiLibraryEngine) {
+      return _pe.applyMigrations(path: path, bundle: bundle);
     }
-    // Binary engine does not support applyMigrations via FFI
+    await applyDesktopMigrations(
+      schema: schema,
+      datasources: datasources,
+      options: options,
+      path: path,
+      bundle: bundle,
+    );
   }
 }

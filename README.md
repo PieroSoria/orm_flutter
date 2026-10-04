@@ -12,12 +12,78 @@ Prisma ORM for Dart allows you to integrate it in Flutter Project.
 | -------- | ------- | ------------------------ |
 | iOS      | ✅      |                          |
 | Android  | ✅      |                          |
-| macOS    | ❌      | Prisma C-ABI not support |
-| Linux    | ❌      | Prisma C-ABI not support |
-| Windows  | ❌      | Prisma C-ABI not support |
+| macOS    | ✅      | Bundled binary engines |
+| Linux    | ✅      | Bundled binary engines |
+| Windows  | ✅      | Bundled binary engines |
 | Web      | ❌      | No plans at the moment   |
 
-## Database Support
+## Desktop setup (macOS, Windows and Linux)
+
+Desktop uses Prisma's process-based query engine and schema engine. No native
+Flutter plugin registration is needed. Download the binaries **from your Flutter
+application directory** before building:
+
+```sh
+# Apple Silicon macOS
+dart run orm_flutter:setup_desktop darwin-arm64
+# Intel macOS
+dart run orm_flutter:setup_desktop darwin
+# Windows x64
+dart run orm_flutter:setup_desktop windows
+# Linux x64, Debian/Ubuntu with OpenSSL 3
+dart run orm_flutter:setup_desktop debian-openssl-3.0.x
+# Linux ARM64 with OpenSSL 3
+dart run orm_flutter:setup_desktop linux-arm64-openssl-3.0.x
+# Alpine Linux x64 with OpenSSL 3
+dart run orm_flutter:setup_desktop linux-musl-openssl-3.0.x
+```
+
+Choose the target for the **destination system**, including its architecture,
+libc and OpenSSL version. Run setup separately before each platform build;
+`prisma/engines` contains one target at a time. The default engine commit is
+`361e86d0ea4987e9f53a565309b3eed797a6bcbd`, matching the previous macOS binary.
+An optional second argument selects another compatible Prisma engine commit.
+Use the same commit for the query and schema engines and a compatible generated
+client. These engines use the legacy JSON protocol; Prisma 7's query compiler is
+not a drop-in replacement.
+
+Add these assets to the application's `pubspec.yaml`:
+
+```yaml
+flutter:
+  assets:
+    - prisma/engines/
+    - prisma/migrations/
+    - prisma/migrations/20260101000000_init/ # each migration directory
+```
+
+Use `LibraryEngine` normally, including `applyMigrations`. Desktop migrations
+run through the schema engine, preserving Prisma's migration history and errors.
+Use an absolute SQLite datasource URL in a writable application support directory.
+New database files are created by migrations. Migrations must finish before the
+first query. Missing engines or migration assets throw an actionable error.
+
+Executables are resolved from `PRISMA_QUERY_ENGINE_BINARY` and
+`PRISMA_SCHEMA_ENGINE_BINARY` first, then alongside the application executable
+(or macOS `Contents/Resources`), then local development directories, and finally
+Flutter assets. Assets are extracted into application support storage under their
+SHA-256 digest; Unix execution permissions are set automatically. This works when
+the application launches outside the source directory.
+
+For a signed/notarized macOS release, place and sign both engines as nested
+executables in `Contents/Resources` before signing the app. Name them
+`prisma-query-engine` and `prisma-schema-engine`. A sandboxed macOS app needs
+outgoing **and incoming** network entitlements for the engine's local HTTP server;
+its child executables must be signed/configured to inherit the app sandbox.
+Validate the final signed bundle on the destination machine. Windows uses `.exe`
+for both engines; Linux needs the system libraries matching the selected target.
+
+The desktop integration test exercises SQLite migrations twice, queries,
+transaction commit/rollback, concurrent startup and reconnection. Set both
+`PRISMA_*_ENGINE_BINARY` environment variables to run it. The GitHub Actions
+workflow runs it on macOS, Windows and Linux.
+
+## Mobile FFI Database Support
 
 | Database             | Suppoprt | Notes                    |
 | -------------------- | -------- | ------------------------ |

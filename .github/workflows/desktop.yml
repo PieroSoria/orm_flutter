@@ -1,0 +1,33 @@
+name: Desktop engines
+on:
+  push:
+  pull_request:
+jobs:
+  integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: darwin
+            extension: ''
+          - os: ubuntu-22.04
+            target: debian-openssl-3.0.x
+            extension: ''
+          - os: windows-latest
+            target: windows
+            extension: '.exe'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test test/desktop_assets_test.dart
+      - run: dart run tool/setup_desktop.dart ${{ matrix.target }}
+      - run: flutter test
+        env:
+          PRISMA_QUERY_ENGINE_BINARY: ${{ github.workspace }}/prisma/engines/query-engine${{ matrix.extension }}
+          PRISMA_SCHEMA_ENGINE_BINARY: ${{ github.workspace }}/prisma/engines/schema-engine${{ matrix.extension }}
