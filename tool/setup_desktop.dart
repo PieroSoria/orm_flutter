@@ -3,6 +3,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'macos_bundle.dart';
+
 const defaultCommit = '361e86d0ea4987e9f53a565309b3eed797a6bcbd';
 
 Future<void> main(List<String> args) async {
@@ -50,6 +52,7 @@ Future<void> main(List<String> args) async {
       if (await targetFile.exists()) await targetFile.delete();
       await File('${staging.path}/$filename').rename(targetFile.path);
     }
+    if (target.startsWith('darwin')) await configureMacosBundle();
     await File('${destination.path}/target.json')
         .writeAsString(jsonEncode({'target': target, 'commit': commit}));
   } finally {

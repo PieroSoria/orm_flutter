@@ -70,13 +70,17 @@ Flutter assets. Assets are extracted into application support storage under thei
 SHA-256 digest; Unix execution permissions are set automatically. This works when
 the application launches outside the source directory.
 
-For a signed/notarized macOS release, place and sign both engines as nested
-executables in `Contents/Resources` before signing the app. Name them
-`prisma-query-engine` and `prisma-schema-engine`. A sandboxed macOS app needs
-outgoing **and incoming** network entitlements for the engine's local HTTP server;
-its child executables must be signed/configured to inherit the app sandbox.
-Validate the final signed bundle on the destination machine. Windows uses `.exe`
-for both engines; Linux needs the system libraries matching the selected target.
+On macOS, setup installs an `Embed Prisma engines` build phase in the Flutter
+application's Xcode Runner project. The build phase copies both executables to
+`Contents/MacOS`, signs them with the app's signing identity (ad-hoc in local
+development), and grants child sandbox inheritance. Setup also enables outgoing
+and incoming network entitlements for the engine's local HTTP server in debug
+and release. It preserves the app sandbox. Run setup after creating the macOS
+platform directory. Assets alone are insufficient in a sandboxed macOS app:
+executing extracted engines from application support storage can be rejected.
+For a notarized release, validate the final signed bundle on the destination
+machine. Windows uses `.exe` for both engines; Linux needs the system libraries
+matching the selected target.
 
 The desktop integration test exercises SQLite migrations twice, queries,
 transaction commit/rollback, concurrent startup and reconnection. Set both
