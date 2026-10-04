@@ -73,7 +73,7 @@ model Note {
     try {
       await engine.applyMigrations(path: 'prisma/migrations');
       await engine.applyMigrations(path: 'prisma/migrations');
-      report('PASS: assets and migrations (twice)');
+      report('PASS: bundled schema engine and migrations (twice)');
       await Future.wait([engine.start(), engine.start()]);
       await engine.request(create('Hello from macOS'));
       report('PASS: concurrent connection and insert');

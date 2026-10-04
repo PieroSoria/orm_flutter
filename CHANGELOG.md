@@ -1,10 +1,19 @@
 ## Unreleased
 
+- Ship desktop query and schema engines inside the plugin, without application
+  engine assets or a setup command.
+- Add automatic macOS Swift Package Manager/CocoaPods resource bundles and
+  Windows/Linux CMake packaging.
+- Include universal macOS engines, Windows x64 and Linux x64/ARM64 OpenSSL 3
+  variants for glibc and musl.
+- Validate internal macOS engines in the native example integration test.
+
+
 - Add desktop query engines for macOS, Windows and Linux with executable overrides,
   application bundle lookup and extraction from Flutter assets.
 - Add desktop migration support through Prisma schema-engine JSON-RPC.
 - Preserve absolute SQLite paths and allow creation of new databases.
-- Add a desktop engine setup command, integration tests and an OS CI matrix.
+- Add an optional engine override download command, integration tests and an OS CI matrix.
 
 ## v0.5.1
 

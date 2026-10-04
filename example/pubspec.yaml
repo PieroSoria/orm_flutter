@@ -43,6 +43,8 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
 
@@ -64,7 +66,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - prisma/engines/
     - prisma/migrations/
     - prisma/migrations/20260101000000_init/
 

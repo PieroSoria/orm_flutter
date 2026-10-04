@@ -20,6 +20,17 @@ Future<File> resolveDesktopEngine(String engine) async {
     return file;
   }
 
+  if (Platform.isMacOS) {
+    try {
+      final paths = await const MethodChannel('orm_flutter/desktop')
+          .invokeMapMethod<String, String>('enginePaths');
+      final bundled = paths?[engine];
+      if (bundled != null && await File(bundled).exists()) return File(bundled);
+    } on MissingPluginException {
+      // Standalone Dart tests and legacy applications can still use overrides.
+    }
+  }
+
   final names = [
     'prisma-$engine${Platform.isWindows ? '.exe' : ''}',
     if (!Platform.isWindows)
@@ -28,6 +39,7 @@ Future<File> resolveDesktopEngine(String engine) async {
   final executableDir = p.dirname(Platform.resolvedExecutable);
   for (final dir in [
     executableDir,
+    p.join(executableDir, 'lib'),
     p.join(executableDir, '..', 'Resources'),
     Directory.current.path,
     p.join(Directory.current.path, 'prisma'),
@@ -35,7 +47,14 @@ Future<File> resolveDesktopEngine(String engine) async {
   ]) {
     for (final name in names) {
       final file = File(p.join(dir, name));
-      if (await file.exists()) return file.absolute;
+      if (await file.exists()) {
+        if (Platform.isLinux && (await file.stat()).mode & 0x49 == 0) {
+          // Flutter installs bundled libraries without execute permission. Keep
+          // the application bundle immutable and execute a verified private copy.
+          return _extractExecutable(await file.readAsBytes(), engine);
+        }
+        return file.absolute;
+      }
     }
   }
 
@@ -45,20 +64,26 @@ Future<File> resolveDesktopEngine(String engine) async {
     data = await rootBundle.load(asset);
   } catch (error) {
     throw StateError('Missing $engine for ${Platform.operatingSystem}. '
-        'Run tool/setup_desktop.dart and add prisma/engines/ to Flutter assets, '
-        'or set $variable to an executable path. ($error)');
+        'Rebuild the application with the desktop plugin registered. '
+        'The orm_flutter package must include its desktop engines. '
+        'You can also set $variable to an executable path. ($error)');
   }
   final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+  return _extractExecutable(bytes, engine);
+}
+
+Future<File> _extractExecutable(List<int> bytes, String engine) async {
   final digest = sha256.convert(bytes).toString();
   final support = await getApplicationSupportDirectory();
-  final file =
-      File(p.join(support.path, 'prisma-engines', digest, p.basename(asset)));
+  final file = File(p.join(support.path, 'prisma-engines', digest,
+      '$engine${Platform.isWindows ? '.exe' : ''}'));
   await file.parent.create(recursive: true);
   if (!await file.exists() ||
       sha256.convert(await file.readAsBytes()).toString() != digest) {
     final temporary = await file.parent.createTemp('extract-');
     try {
-      final staging = File(p.join(temporary.path, p.basename(asset)));
+      final staging = File(
+          p.join(temporary.path, '$engine${Platform.isWindows ? '.exe' : ''}'));
       await staging.writeAsBytes(bytes, flush: true);
       if (await file.exists()) await file.delete();
       await staging.rename(file.path);

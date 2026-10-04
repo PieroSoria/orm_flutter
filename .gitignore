@@ -77,3 +77,6 @@ android/local.properties
 .pub/
 # pubspec.lock is normally committed for applications; it is not for packages
 pubspec.lock
+# Intermediate slices used to produce the shipped universal macOS engines.
+/desktop/engines/darwin/
+/desktop/engines/darwin-arm64/

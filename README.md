@@ -17,75 +17,52 @@ Prisma ORM for Dart allows you to integrate it in Flutter Project.
 | Windows  | ✅      | Bundled binary engines |
 | Web      | ❌      | No plans at the moment   |
 
-## Desktop setup (macOS, Windows and Linux)
+## Desktop integration (macOS, Windows and Linux)
 
-Desktop uses Prisma's process-based query engine and schema engine. No native
-Flutter plugin registration is needed. Download the binaries **from your Flutter
-application directory** before building:
+Desktop engines are shipped **inside orm_flutter** and included automatically by
+Flutter's native plugin build. Applications do not need to download engines,
+declare `prisma/engines/` assets, set executable paths, or add an Xcode build phase.
+Use `LibraryEngine` and `applyMigrations` normally; declare only your migration
+assets. Apply migrations before the first connection/query, and use an absolute
+SQLite path in a writable application support directory.
 
-```sh
-# Apple Silicon macOS
-dart run orm_flutter:setup_desktop darwin-arm64
-# Intel macOS
-dart run orm_flutter:setup_desktop darwin
-# Windows x64
-dart run orm_flutter:setup_desktop windows
-# Linux x64, Debian/Ubuntu with OpenSSL 3
-dart run orm_flutter:setup_desktop debian-openssl-3.0.x
-# Linux ARM64 with OpenSSL 3
-dart run orm_flutter:setup_desktop linux-arm64-openssl-3.0.x
-# Alpine Linux x64 with OpenSSL 3
-dart run orm_flutter:setup_desktop linux-musl-openssl-3.0.x
-```
+| Platform | Included targets | Packaging |
+| --- | --- | --- |
+| macOS | Intel and Apple Silicon (universal binaries) | Swift Package Manager resource bundle, or CocoaPods framework resource bundle |
+| Windows | x64 | CMake installs both `.exe` files beside the application |
+| Linux | x64/ARM64, glibc or musl, OpenSSL 3 | CMake chooses the target and installs both executables in `lib/` |
 
-Choose the target for the **destination system**, including its architecture,
-libc and OpenSSL version. Run setup separately before each platform build;
-`prisma/engines` contains one target at a time. The default engine commit is
-`361e86d0ea4987e9f53a565309b3eed797a6bcbd`, matching the previous macOS binary.
-An optional second argument selects another compatible Prisma engine commit.
-Use the same commit for the query and schema engines and a compatible generated
-client. These engines use the legacy JSON protocol; Prisma 7's query compiler is
-not a drop-in replacement.
+macOS executes the signed engines directly inside the app bundle. A sandboxed
+application must enable `com.apple.security.network.client` and
+`com.apple.security.network.server` in both its debug and release entitlements,
+because the query engine communicates through a local HTTP server. The plugin
+does not disable or modify the application sandbox. For distribution, validate
+your signing identity and notarization of the final bundle, including the nested
+engine executables. CocoaPods signs the resource engines during its build;
+Swift Package Manager uses the signed universal executables shipped in the package.
 
-Add these assets to the application's `pubspec.yaml`:
+Linux needs OpenSSL 3 installed. Alpine selects the musl variant; other supported
+distributions select glibc. Cross-builds can choose `ORM_FLUTTER_LINUX_TARGET` in
+CMake explicitly. If Flutter installs the bundled files without execute permission,
+the runtime copies them to application support storage under their SHA-256 digest
+and sets Unix execution permissions without modifying the installed app directory.
+Older OpenSSL versions and Windows ARM64 are not included.
 
-```yaml
-flutter:
-  assets:
-    - prisma/engines/
-    - prisma/migrations/
-    - prisma/migrations/20260101000000_init/ # each migration directory
-```
+The optional `PRISMA_QUERY_ENGINE_BINARY` and `PRISMA_SCHEMA_ENGINE_BINARY`
+environment variables override the bundled engines for advanced setups and tests.
+Legacy application assets remain a fallback. Applications that previously ran
+`setup_desktop` can remove the old `Embed Prisma engines` Runner build phase and
+engine asset entry; neither is required by this version.
 
-Use `LibraryEngine` normally, including `applyMigrations`. Desktop migrations
-run through the schema engine, preserving Prisma's migration history and errors.
-Use an absolute SQLite datasource URL in a writable application support directory.
-New database files are created by migrations. Migrations must finish before the
-first query. Missing engines or migration assets throw an actionable error.
+Engine binaries use commit `361e86d0ea4987e9f53a565309b3eed797a6bcbd`, matching the
+previous query engine and the legacy Prisma JSON protocol. Maintainers can refresh
+the shipped binaries with `dart run tool/vendor_desktop.dart` on macOS. It verifies
+Prisma CDN SHA-256 checksums and generates signed universal macOS engines. This is
+a package maintenance command; applications do not run it. Prisma's Apache 2.0
+license is included in `desktop/PRISMA_LICENSE`.
 
-Executables are resolved from `PRISMA_QUERY_ENGINE_BINARY` and
-`PRISMA_SCHEMA_ENGINE_BINARY` first, then alongside the application executable
-(or macOS `Contents/Resources`), then local development directories, and finally
-Flutter assets. Assets are extracted into application support storage under their
-SHA-256 digest; Unix execution permissions are set automatically. This works when
-the application launches outside the source directory.
-
-On macOS, setup installs an `Embed Prisma engines` build phase in the Flutter
-application's Xcode Runner project. The build phase copies both executables to
-`Contents/MacOS`, signs them with the app's signing identity (ad-hoc in local
-development), and grants child sandbox inheritance. Setup also enables outgoing
-and incoming network entitlements for the engine's local HTTP server in debug
-and release. It preserves the app sandbox. Run setup after creating the macOS
-platform directory. Assets alone are insufficient in a sandboxed macOS app:
-executing extracted engines from application support storage can be rejected.
-For a notarized release, validate the final signed bundle on the destination
-machine. Windows uses `.exe` for both engines; Linux needs the system libraries
-matching the selected target.
-
-The desktop integration test exercises SQLite migrations twice, queries,
-transaction commit/rollback, concurrent startup and reconnection. Set both
-`PRISMA_*_ENGINE_BINARY` environment variables to run it. The GitHub Actions
-workflow runs it on macOS, Windows and Linux.
+The [desktop example](example/README.md) tests packaged engines in a real Flutter
+application, including migrations, commit/rollback and reconnection.
 
 ## Mobile FFI Database Support
 

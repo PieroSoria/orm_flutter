@@ -41,6 +41,12 @@ flutter:
         ffiPlugin: true
       ios:
         ffiPlugin: true
+      macos:
+        pluginClass: OrmFlutterPlugin
+      windows:
+        ffiPlugin: true
+      linux:
+        ffiPlugin: true
 
 ffigen:
   name: QueryEngineBindings

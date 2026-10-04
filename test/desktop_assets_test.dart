@@ -15,6 +15,31 @@ class SupportPath extends PathProviderPlatform {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('macOS resolves native resources without application engine assets',
+      () async {
+    final directory =
+        await Directory.systemTemp.createTemp('orm-native-resources-');
+    final query = File('${directory.path}/prisma-query-engine');
+    final schema = File('${directory.path}/prisma-schema-engine');
+    await query.writeAsString('query');
+    await schema.writeAsString('schema');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    const channel = MethodChannel('orm_flutter/desktop');
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'enginePaths');
+      return {'query-engine': query.path, 'schema-engine': schema.path};
+    });
+    try {
+      expect((await resolveDesktopEngine('query-engine')).path, query.path);
+      expect((await resolveDesktopEngine('schema-engine')).path, schema.path);
+    } finally {
+      messenger.setMockMethodCallHandler(channel, null);
+      await directory.delete(recursive: true);
+    }
+  },
+      skip: !Platform.isMacOS ||
+          Platform.environment.containsKey('PRISMA_QUERY_ENGINE_BINARY'));
   test('new SQLite database keeps an absolute path', () {
     final url = desktopDatasourceUrl('file:new.db');
     expect(url, 'file:${Directory.current.path}/new.db');
