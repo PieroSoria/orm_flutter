@@ -10,6 +10,7 @@ import 'package:path/path.dart';
 
 import '_generate_bindings.dart';
 import 'bindings.dart';
+import 'migration_error_pointer.dart';
 
 /// Current query engine ID counter
 int _currentEngineId = 0;
@@ -262,20 +263,8 @@ class FfiLibraryEngine extends Engine implements Finalizable {
       await file.writeAsBytes(bytes.buffer.asUint8List());
     }
 
-    final errorPtr = malloc<Pointer<Char>>();
-    try {
-      final status = bindings.applyMigrations(
-          _qeptr.value, migrationTempDir.path.toNativeUtf8().cast(), errorPtr);
-
-      if (status != Status.ok) {
-        final message = errorPtr.value.cast<Utf8>().toDartString();
-        malloc.free(errorPtr);
-
-        throw StateError(message);
-      }
-    } finally {
-      malloc.free(errorPtr);
-    }
+    applyMigrationsWithErrorPointer((errorPtr) => bindings.applyMigrations(
+        _qeptr.value, migrationTempDir.path.toNativeUtf8().cast(), errorPtr));
   }
 }
 
